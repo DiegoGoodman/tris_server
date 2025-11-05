@@ -6,6 +6,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -26,15 +27,27 @@ public class Main {
         G1_out.println("READY");
         G2_out.println("READY");
 
-        String board = "0,0,0,0,0,0,0,0,0,";
+        String board = "0,0,0,0,0,0,0,0,0, ";
         String celle[] = board.split(",");
         int cont = 1;
         do {
             String risultato = "";
             do {
                 if (cont%2 != 0){
-                    String pos_received = G1_in.readLine();
-                    int pos = Integer.parseInt(pos_received);
+                    int pos = -1;
+                    String pos_received;
+                    try {
+                        pos_received = G1_in.readLine();
+                        if (pos_received == null){
+                            G2_out.println("DISCONNECTED");
+                            G2.close();
+                            MyServerSocket.close();
+                            return;
+                        }
+                        pos = Integer.parseInt(pos_received);
+                    } catch (NumberFormatException e) {
+                        pos = -1;
+                    }
                     if (pos >= 0 && pos < 9){
                         if (celle[pos].equals("0")){
                             celle[pos] = "1";
@@ -56,8 +69,20 @@ public class Main {
                     if (risultato.equals("KO")) G1_out.println(risultato);
                 }
                 else {
-                    String pos_received = G2_in.readLine();
-                    int pos = Integer.parseInt(pos_received);
+                    int pos;
+                    String pos_received;
+                    try {
+                        pos_received = G2_in.readLine();
+                        if (pos_received == null){
+                            G1_out.println("DISCONNECTED");
+                            G1.close();
+                            MyServerSocket.close();
+                            return;
+                        }
+                        pos = Integer.parseInt(pos_received);
+                    } catch (NumberFormatException e) {
+                        pos = -1;
+                    }
                     if (pos >= 0 && pos < 9){
                         if (celle[pos].equals("0")){
                             celle[pos] = "2";
@@ -84,11 +109,17 @@ public class Main {
             if (cont%2 != 0){
                 if (risultato.equals("OK")){
                     G1_out.println(risultato);
-                    G2_out.println(Arrays.toString(celle));
+                    String tabella = null;
+                    for (int i =0; i<10;i++){
+                        tabella += celle[i];
+                        if (i != 9)
+                            tabella += ","; 
+                    }
+                    G2_out.println(tabella);
                 }
                 else if (risultato.equals("W")){
                     celle[9] = risultato;
-                    G1_out.println(risultato);
+                    G1_out.println("L");
                     G2_out.println(Arrays.toString(celle));
                     cont = 9;
                 }
@@ -105,7 +136,7 @@ public class Main {
                 }
                 else if (risultato.equals("W")){
                     celle[9] = risultato;
-                    G2_out.println(risultato);
+                    G2_out.println("L");
                     G1_out.println(Arrays.toString(celle));
                     cont = 9;
                 }
@@ -117,6 +148,8 @@ public class Main {
             }
             cont++;
         }while(cont < 10);
+
+
         MyServerSocket.close();
     }
 }
